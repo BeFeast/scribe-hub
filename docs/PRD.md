@@ -107,27 +107,27 @@ This document outlines improvements organized by priority.
 - Add a context with timeout (e.g. 15s) to the yt-dlp title fetch.
 - On timeout, proceed with the URL as the title (current fallback behavior) rather than blocking.
 
-### 8. CLI Counterpart Compatibility
+### 8. API Client Compatibility
 
-**Problem:** scribe-hub behavior is currently defined around its own API patterns. Teams using OpenClaw, Claude, and Codex CLIs need a shared command contract and output compatibility to avoid provider-specific wrappers and brittle glue code.
+**Problem:** scribe-hub exposes a plain HTTP REST API, but client behavior is only implicitly defined. This makes integrations brittle across `curl`, scripts, and other HTTP clients.
 
 **Requirements:**
-- Define a canonical command surface (subcommands, required/optional flags, and JSON input/output modes) that all supported CLIs can implement or adapt to.
-- Specify a behavior parity matrix for OpenClaw CLI, Claude CLI, and Codex CLI covering core workflows (submit, status, cancel, list/history, output retrieval, and machine-readable mode).
-- Define normalized exit codes and a structured error schema, including transport errors, validation errors, auth/config errors, timeout/interruption cases, and provider/runtime failures.
-- Define transcript and job schema compatibility, including field-level mapping rules, type normalization, nullability/default handling, timestamp conventions, and forward-compatible handling for unknown fields.
-- Add explicit non-goals for provider-specific features that may remain optional (e.g., proprietary flags, provider-native streaming/event formats, and advanced diagnostics not expressible in the canonical schema).
-- Add acceptance criteria requiring the same input fixtures to produce functionally equivalent outputs across OpenClaw CLI, Claude CLI, and Codex CLI, allowing only documented non-goal deviations.
+- Define a canonical API usage contract for core workflows (submit, status, cancel, list/history, output retrieval), including required headers, request/response JSON, and error handling expectations.
+- Specify a behavior parity matrix for representative HTTP clients (for example: `curl`, JavaScript `fetch`, and Python `requests`) covering the same core workflows.
+- Define a structured error schema and transport-failure handling guidance (timeouts, connection resets, non-JSON upstream failures, and retry behavior).
+- Define transcript and job schema compatibility rules, including field mapping, type normalization, nullability/default handling, timestamp conventions, and forward-compatible handling for unknown fields.
+- Add explicit non-goals for client-specific conveniences that remain optional (for example shell aliases, SDK helper wrappers, or custom retry middleware).
+- Add acceptance criteria requiring the same input fixtures to produce functionally equivalent API results across the documented HTTP clients, allowing only documented non-goal deviations.
 
 ---
 
-### 8. Documentation deliverables
+### 8b. Documentation deliverables
 
 **Requirements:**
-- Provide quickstart examples for OpenClaw, Claude CLI, and Codex CLI that demonstrate equivalent end-to-end workflows (submit, monitor, and retrieve results) using the same sample job.
-- Include copy-paste command snippets for each CLI covering `submit`, `cancel`, `status`, and `history` operations.
-- Add a troubleshooting matrix that maps common authentication, environment-variable, and path-resolution issues to CLI-specific symptoms and fixes.
-- Define documentation versioning rules and parity checks so CLI examples are updated whenever API contracts, flags, or response schemas change.
+- Provide quickstart examples using `curl` plus at least one additional HTTP client that demonstrate equivalent end-to-end workflows (submit, monitor, and retrieve results) using the same sample job.
+- Include copy-paste HTTP request snippets for `submit`, `cancel`, `status`, and `history` operations.
+- Add a troubleshooting matrix that maps common authentication, environment-variable, network, and payload-validation issues to likely symptoms and fixes.
+- Define documentation versioning rules and parity checks so API examples are updated whenever routes, payload contracts, or response schemas change.
 
 ---
 
