@@ -188,7 +188,7 @@ This document outlines improvements organized by priority.
 - **Keyboard-only operation:** A keyboard-only test pass completes submit, history navigation, row expansion, and output interaction without pointer input.
 - **Semantic labeling + announcements:** Accessibility tree/screen reader checks confirm form labels, status badge semantics, and announcements for job lifecycle changes.
 - **Contrast + focus-visible:** Automated and manual checks confirm compliant color contrast and visible focus state on all interactive elements.
-- **Reduced motion + pause/stop:** When `prefers-reduced-motion` is active, motion is reduced; users can pause/stop/resume auto-scrolling output from UI controls.
+- **Reduced motion + pause/stop:** When `prefers-reduced-motion` is active, all motion-heavy behaviors (including auto-scrolling output and any animated indicators) are reduced; users can pause/stop/resume auto-scrolling output from UI controls.
 
 ### 17. Multi-source support
 
