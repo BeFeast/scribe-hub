@@ -165,7 +165,7 @@ This document outlines improvements organized by priority.
 - **Keyboard-only operation:** Starting a stream, toggling follow mode, pausing/resuming output, and expanding/collapsing output can be completed without a mouse using only keyboard controls.
 - **Semantic labeling + live announcements:** Screen reader testing confirms labeled controls/regions and audible announcements for each job state transition.
 - **Contrast + focus-visible:** Visual QA verifies minimum contrast and clearly visible focus styles for every interactive element in live output views.
-- **Reduced motion + pause/stop:** With reduced-motion enabled, auto-scrolling/animation is minimized; users can pause/stop auto-scroll and resume manually.
+- **Reduced motion + pause/stop:** With reduced-motion enabled, auto-scrolling/animation is minimized; users can pause/stop auto-scroll and resume manually, and announcement updates from the live region are also halted when scrolling is paused.
 
 ### 16. Web UI
 
