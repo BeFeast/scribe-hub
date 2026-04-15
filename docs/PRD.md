@@ -154,6 +154,18 @@ This document outlines improvements organized by priority.
 **Requirements:**
 - `GET /ws/jobs/{id}/output` -- WebSocket endpoint streaming script stdout/stderr in real time.
 - Fallback: `GET /jobs/{id}/output?follow=true` using SSE (Server-Sent Events).
+- Baseline accessibility conformance target: WCAG 2.2 AA for all live output interactions.
+- Live output stream and related controls are fully operable with keyboard only (focus order, open/close stream, scroll, pause/resume).
+- Live output panel uses semantic labeling and a dedicated live region that announces job state transitions (`queued -> running -> completed/failed`) to screen readers.
+- All interactive controls (connect/disconnect, follow mode, pause/resume, expand/collapse output) meet contrast requirements and always show a visible focus indicator.
+- Auto-scrolling live output supports reduced-motion preferences and includes pause/stop controls that halt automatic movement/announcement updates on user request.
+
+**Acceptance tests:**
+- **Conformance target:** Accessibility checklist and automated scans report WCAG 2.2 AA compliance for the live output workflow, with any exceptions documented and approved.
+- **Keyboard-only operation:** Starting a stream, toggling follow mode, pausing/resuming output, and expanding/collapsing output can be completed without a mouse using only keyboard controls.
+- **Semantic labeling + live announcements:** Screen reader testing confirms labeled controls/regions and audible announcements for each job state transition.
+- **Contrast + focus-visible:** Visual QA verifies minimum contrast and clearly visible focus styles for every interactive element in live output views.
+- **Reduced motion + pause/stop:** With reduced-motion enabled, auto-scrolling/animation is minimized; users can pause/stop auto-scroll and resume manually.
 
 ### 16. Web UI
 
@@ -165,6 +177,18 @@ This document outlines improvements organized by priority.
   - Live queue view
   - Job history table with status, title, duration
   - Click-to-expand job output
+- Baseline accessibility conformance target: WCAG 2.2 AA for the full UI experience.
+- Submit form, history table interactions, and output expansion are fully operable with keyboard only.
+- Form fields, status badges, queue/history controls, and output regions have semantic labels/roles; job state changes are exposed through screen-reader announcements.
+- All interactive elements in the UI meet contrast requirements and provide clear `:focus-visible` styling.
+- Motion-heavy behaviors (including auto-scrolling output) honor reduced-motion preferences and provide pause/stop controls.
+
+**Acceptance tests:**
+- **Conformance target:** End-to-end UI accessibility review confirms WCAG 2.2 AA target coverage for submit, queue, history, and output flows.
+- **Keyboard-only operation:** A keyboard-only test pass completes submit, history navigation, row expansion, and output interaction without pointer input.
+- **Semantic labeling + announcements:** Accessibility tree/screen reader checks confirm form labels, status badge semantics, and announcements for job lifecycle changes.
+- **Contrast + focus-visible:** Automated and manual checks confirm compliant color contrast and visible focus state on all interactive elements.
+- **Reduced motion + pause/stop:** When `prefers-reduced-motion` is active, motion is reduced; users can pause/stop/resume auto-scrolling output from UI controls.
 
 ### 17. Multi-source support
 
