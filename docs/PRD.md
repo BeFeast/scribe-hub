@@ -241,3 +241,33 @@ This document outlines improvements organized by priority.
 **Requirements:**
 - Detect URL type and use appropriate title-fetching strategy (yt-dlp for video sites, HTTP HEAD for direct files, filename for local paths).
 - Support `file://` paths or multipart upload for local audio/video files.
+
+---
+
+## Test strategy
+
+### 1. Golden fixtures
+
+**Requirements:**
+- Define a shared set of golden fixtures that include input URL and job options.
+- For each fixture, define the expected normalized output JSON used for parity checks.
+
+### 2. CLI parity verification
+
+**Requirements:**
+- Run every golden fixture against all three CLIs.
+- Normalize each CLI output to the shared JSON contract and diff results against expected golden outputs.
+- Treat any non-whitespace JSON diff as a parity regression.
+
+### 3. Accessibility validation for UI
+
+**Requirements:**
+- Add accessibility checks for keyboard traversal across all interactive components.
+- Verify ARIA announcements for status updates and asynchronous job state changes.
+- Enforce contrast checks for text and actionable UI elements.
+
+### 4. Release gate
+
+**Requirements:**
+- Block release if any CLI parity regression is detected from the golden fixture suite.
+- Block release if any critical accessibility regression is detected.
