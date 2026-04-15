@@ -40,7 +40,7 @@ This document outlines improvements organized by priority.
 
 ## P1 -- Usability
 
-### API contract baseline (applies to `POST /transcribe`, `DELETE /jobs/{id}`, `GET /status/{id}`, `GET /jobs`)
+### 4. API contract baseline (applies to `POST /transcribe`, `DELETE /jobs/{id}`, `GET /status/{id}`, `GET /jobs`)
 
 **Problem:** API behavior is currently implied by implementation details and ad-hoc responses, making client integration brittle across CLI tools, web UIs, and accessibility tooling.
 
