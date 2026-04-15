@@ -8,7 +8,7 @@ Jobs are processed one at a time through a serial queue, so long-running transcr
 
 - **Go 1.25+**
 - **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** -- used to fetch video titles and by the transcription script to download audio
-- **Transcription script** -- [`video-transcript-summary-faster-whisper.sh`](https://github.com/user/video-summary) (default location: `$HOME/Projects/video-summary/scripts/video-transcript-summary-faster-whisper.sh`)
+- **Transcription script** -- [`video-transcript-summary-faster-whisper.sh`](https://github.com/befeast/video-summary) (default location: `$HOME/Projects/video-summary/scripts/video-transcript-summary-faster-whisper.sh`)
 
 ## Quick start
 
