@@ -75,7 +75,7 @@ This document outlines improvements organized by priority.
 
 ---
 
-### Documentation deliverables
+### 8. Documentation deliverables
 
 **Requirements:**
 - Provide quickstart examples for OpenClaw, Claude CLI, and Codex CLI that demonstrate equivalent end-to-end workflows (submit, monitor, and retrieve results) using the same sample job.
