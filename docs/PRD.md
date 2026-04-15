@@ -40,6 +40,40 @@ This document outlines improvements organized by priority.
 
 ## P1 -- Usability
 
+### API contract baseline (applies to `POST /transcribe`, `DELETE /jobs/{id}`, `GET /status/{id}`, `GET /jobs`)
+
+**Problem:** API behavior is currently implied by implementation details and ad-hoc responses, making client integration brittle across CLI tools, web UIs, and accessibility tooling.
+
+**Requirements:**
+- All non-2xx responses MUST return a stable JSON error object:
+  - `code` (string, machine-readable, stable across releases; e.g. `TITLE_FETCH_TIMEOUT`, `JOB_NOT_FOUND`)
+  - `message` (string, human-readable summary)
+  - `hint` (string, optional actionable next step)
+  - `retryable` (boolean; `true` only when a retry is expected to succeed)
+- `message` content MUST be understandable when read aloud by screen readers and CLI narration:
+  - No internal jargon or stack traces.
+  - Prefer plain language with concrete guidance (for example: "Job is already running; use force=true to submit another").
+  - Keep to one to two short sentences.
+- Status endpoints MUST use a consistent vocabulary everywhere (`/status/{id}` and `/jobs`):
+  - Allowed statuses: `queued`, `running`, `done`, `failed`, `cancelled`.
+  - Disallow synonyms (`complete`, `success`, `error`, etc.) in API payloads.
+- Lifecycle transitions MUST be explicit and enforced:
+  - `queued -> running`
+  - `running -> done | failed | cancelled`
+  - `queued -> cancelled`
+  - No other transitions are valid (terminal states are `done`, `failed`, `cancelled`).
+- Publish JSON Schemas for request/response payloads and version them with the API:
+  - `schemas/transcribe-request.schema.json`
+  - `schemas/job-response.schema.json`
+  - `schemas/error-response.schema.json`
+  - Schemas MUST be linked from README/API docs and included in release artifacts.
+
+**Required error/edge-case examples (docs + tests):**
+- Title fetch timeout during `POST /transcribe` (fallback title used; request still succeeds when possible, otherwise explicit timeout error with `retryable: true`).
+- Cancellation via `DELETE /jobs/{id}` for both queued and running jobs (`cancelled` terminal state).
+- Duplicate URL detection on `POST /transcribe` (existing active job returned or conflict response, with clear `hint` about `force=true`).
+- Rate limit exceedance (`429`) with a retry-oriented hint and `retryable: true`.
+
 ### 4. Job cancellation
 
 **Problem:** Once submitted, a job cannot be cancelled. If a wrong URL is submitted, it blocks the queue until the script finishes or fails.
