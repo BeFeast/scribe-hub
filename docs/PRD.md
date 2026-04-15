@@ -75,6 +75,16 @@ This document outlines improvements organized by priority.
 
 ---
 
+### Documentation deliverables
+
+**Requirements:**
+- Provide quickstart examples for OpenClaw, Claude CLI, and Codex CLI that demonstrate equivalent end-to-end workflows (submit, monitor, and retrieve results) using the same sample job.
+- Include copy-paste command snippets for each CLI covering `submit`, `cancel`, `status`, and `history` operations.
+- Add a troubleshooting matrix that maps common authentication, environment-variable, and path-resolution issues to CLI-specific symptoms and fixes.
+- Define documentation versioning rules and parity checks so CLI examples are updated whenever API contracts, flags, or response schemas change.
+
+---
+
 ## P2 -- Observability
 
 ### 8. Structured logging
