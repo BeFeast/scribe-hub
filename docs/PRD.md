@@ -107,6 +107,18 @@ This document outlines improvements organized by priority.
 - Add a context with timeout (e.g. 15s) to the yt-dlp title fetch.
 - On timeout, proceed with the URL as the title (current fallback behavior) rather than blocking.
 
+### 8. CLI Counterpart Compatibility
+
+**Problem:** scribe-hub behavior is currently defined around its own API patterns. Teams using OpenClaw, Claude, and Codex CLIs need a shared command contract and output compatibility to avoid provider-specific wrappers and brittle glue code.
+
+**Requirements:**
+- Define a canonical command surface (subcommands, required/optional flags, and JSON input/output modes) that all supported CLIs can implement or adapt to.
+- Specify a behavior parity matrix for OpenClaw CLI, Claude CLI, and Codex CLI covering core workflows (submit, status, cancel, list/history, output retrieval, and machine-readable mode).
+- Define normalized exit codes and a structured error schema, including transport errors, validation errors, auth/config errors, timeout/interruption cases, and provider/runtime failures.
+- Define transcript and job schema compatibility, including field-level mapping rules, type normalization, nullability/default handling, timestamp conventions, and forward-compatible handling for unknown fields.
+- Add explicit non-goals for provider-specific features that may remain optional (e.g., proprietary flags, provider-native streaming/event formats, and advanced diagnostics not expressible in the canonical schema).
+- Add acceptance criteria requiring the same input fixtures to produce functionally equivalent outputs across OpenClaw CLI, Claude CLI, and Codex CLI, allowing only documented non-goal deviations.
+
 ---
 
 ### 8. Documentation deliverables
@@ -121,7 +133,7 @@ This document outlines improvements organized by priority.
 
 ## P2 -- Observability
 
-### 8. Structured logging
+### 9. Structured logging
 
 **Problem:** Logs are unstructured `log.Printf` calls mixed with raw script output in a single file.
 
@@ -130,7 +142,7 @@ This document outlines improvements organized by priority.
 - Separate application logs from script output. Script output should go to per-job log files or a dedicated directory.
 - Include job ID, URL, duration, and status in log entries.
 
-### 9. Metrics endpoint
+### 10. Metrics endpoint
 
 **Problem:** No visibility into queue depth, job throughput, or error rates.
 
@@ -142,7 +154,7 @@ This document outlines improvements organized by priority.
   - `title_fetch_duration_seconds` (histogram)
 - Prometheus-compatible format.
 
-### 10. Job history & cleanup
+### 11. Job history & cleanup
 
 **Problem:** The in-memory store grows without bound. After persistence is added, the database will also grow indefinitely.
 
@@ -154,7 +166,7 @@ This document outlines improvements organized by priority.
 
 ## P3 -- Scalability & features
 
-### 11. Configurable worker concurrency
+### 12. Configurable worker concurrency
 
 **Problem:** Only one job runs at a time. On machines with sufficient resources, this underutilizes capacity.
 
@@ -162,7 +174,7 @@ This document outlines improvements organized by priority.
 - Add a `-workers N` flag (default 1) controlling how many jobs run in parallel.
 - Queue position calculations should account for the worker pool size.
 
-### 12. Job priority
+### 13. Job priority
 
 **Problem:** All jobs are FIFO. There's no way to expedite an urgent transcription.
 
@@ -170,7 +182,7 @@ This document outlines improvements organized by priority.
 - Optional `priority` field on submit (`low`, `normal`, `high`; default `normal`).
 - Higher-priority jobs are inserted ahead of lower-priority ones in the queue.
 
-### 13. Rate limiting
+### 14. Rate limiting
 
 **Problem:** No protection against excessive submissions flooding the queue.
 
@@ -178,7 +190,7 @@ This document outlines improvements organized by priority.
 - Configurable rate limit per IP or globally (e.g. 10 submissions per minute).
 - Return `429 Too Many Requests` when exceeded.
 
-### 14. Docker packaging
+### 15. Docker packaging
 
 **Problem:** Deployment requires manually installing Go, yt-dlp, faster-whisper, and the transcription script.
 
@@ -191,7 +203,7 @@ This document outlines improvements organized by priority.
 
 ## P4 -- Nice to have
 
-### 15. WebSocket live output
+### 16. WebSocket live output
 
 **Problem:** For long-running jobs, there's no way to see progress. You only get output after the job finishes.
 
@@ -211,7 +223,7 @@ This document outlines improvements organized by priority.
 - **Contrast + focus-visible:** Visual QA verifies minimum contrast and clearly visible focus styles for every interactive element in live output views.
 - **Reduced motion + pause/stop:** With reduced-motion enabled, auto-scrolling/animation is minimized; users can pause/stop auto-scroll and resume manually, and announcement updates from the live region are also halted when scrolling is paused.
 
-### 16. Web UI
+### 17. Web UI
 
 **Problem:** The service is API-only, requiring curl or a custom client.
 
@@ -234,7 +246,7 @@ This document outlines improvements organized by priority.
 - **Contrast + focus-visible:** Automated and manual checks confirm compliant color contrast and visible focus state on all interactive elements.
 - **Reduced motion + pause/stop:** When `prefers-reduced-motion` is active, all motion-heavy behaviors (including auto-scrolling output and any animated indicators) are reduced; users can pause/stop/resume auto-scrolling output from UI controls.
 
-### 17. Multi-source support
+### 18. Multi-source support
 
 **Problem:** Title fetching assumes YouTube. The service could handle podcasts, local files, or direct audio URLs.
 
