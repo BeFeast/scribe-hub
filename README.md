@@ -24,6 +24,8 @@ go build -o scribe-hub ./cmd/scribe-hub
 ```
 
 ## Configuration
+| Setting | Source | Default |
+| --- | --- | --- |
 | HTTP port | `-port` flag | `18810` |
 | Transcription script | hardcoded | `$HOME/Projects/video-summary/scripts/video-transcript-summary-faster-whisper.sh` |
 | Output folder | `OBSIDIAN_FOLDER` env var | `$HOME/Documents/Digests` |
