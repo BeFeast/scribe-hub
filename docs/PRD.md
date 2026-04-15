@@ -264,11 +264,11 @@ This document outlines improvements organized by priority.
 - Define a shared set of golden fixtures that include input URL and job options.
 - For each fixture, define the expected normalized output JSON used for parity checks.
 
-### 2. CLI parity verification
+### 2. HTTP client parity verification
 
 **Requirements:**
-- Run every golden fixture against all three CLIs.
-- Normalize each CLI output to the shared JSON contract and diff results against expected golden outputs.
+- Run every golden fixture against the representative HTTP clients defined in section 8 (`curl`, JavaScript `fetch`, and Python `requests`).
+- Normalize each client output to the shared JSON contract and diff results against expected golden outputs.
 - Treat any non-whitespace JSON diff as a parity regression.
 
 ### 3. Accessibility validation for UI
@@ -281,5 +281,5 @@ This document outlines improvements organized by priority.
 ### 4. Release gate
 
 **Requirements:**
-- Block release if any CLI parity regression is detected from the golden fixture suite.
+- Block release if any HTTP client parity regression is detected from the golden fixture suite.
 - Block release if any critical accessibility regression is detected.
