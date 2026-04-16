@@ -11,8 +11,8 @@ Jobs are processed one at a time through a serial queue, so long-running transcr
 - **[ffmpeg](https://ffmpeg.org/)** -- normalizes audio to 16kHz WAV before transcription
 - **[uv](https://docs.astral.sh/uv/)** -- runs the Python transcription and summarization scripts
 - **Python 3.10+** -- required by the Python scripts (managed by uv)
+- **Google Chrome** (optional) -- yt-dlp reads cookies from Chrome to authenticate title fetches; title falls back to the URL if Chrome is unavailable
 - **`GEMINI_API_KEY`** env var -- required for AI summarization (not needed with `--skip-summary`)
-
 ## Quick start
 
 ```bash
@@ -27,9 +27,8 @@ go build -o scribe-hub ./cmd/scribe-hub
 ```
 
 ## Configuration
-
 | Setting | Source | Default |
-|---------|--------|---------|
+| --- | --- | --- |
 | HTTP port | `-port` flag | `18810` |
 | Transcription script | `SCRIBE_SCRIPT_PATH` env var | auto-resolved from binary dir or `./scripts/video-transcript-summary-faster-whisper.sh` |
 | Extra PATH dirs | `SCRIBE_EXTRA_PATH` env var | _(none — inherits system PATH)_ |

@@ -40,6 +40,40 @@ This document outlines improvements organized by priority.
 
 ## P1 -- Usability
 
+### 4. API contract baseline (applies to `POST /transcribe`, `DELETE /jobs/{id}`, `GET /status/{id}`, `GET /jobs`)
+
+**Problem:** API behavior is currently implied by implementation details and ad-hoc responses, making client integration brittle across CLI tools, web UIs, and accessibility tooling.
+
+**Requirements:**
+- All non-2xx responses MUST return a stable JSON error object:
+  - `code` (string, machine-readable, stable across releases; e.g. `TITLE_FETCH_TIMEOUT`, `JOB_NOT_FOUND`)
+  - `message` (string, human-readable summary)
+  - `hint` (string, optional actionable next step)
+  - `retryable` (boolean; `true` only when a retry is expected to succeed)
+- `message` content MUST be understandable when read aloud by screen readers and CLI narration:
+  - No internal jargon or stack traces.
+  - Prefer plain language with concrete guidance (for example: "Job is already running; use force=true to submit another").
+  - Keep to one to two short sentences.
+- Status endpoints MUST use a consistent vocabulary everywhere (`/status/{id}` and `/jobs`):
+  - Allowed statuses: `queued`, `running`, `done`, `failed`, `cancelled`.
+  - Disallow synonyms (`complete`, `success`, `error`, etc.) in API payloads.
+- Lifecycle transitions MUST be explicit and enforced:
+  - `queued -> running`
+  - `running -> done | failed | cancelled`
+  - `queued -> cancelled`
+  - No other transitions are valid (terminal states are `done`, `failed`, `cancelled`).
+- Publish JSON Schemas for request/response payloads and version them with the API:
+  - `schemas/transcribe-request.schema.json`
+  - `schemas/job-response.schema.json`
+  - `schemas/error-response.schema.json`
+  - Schemas MUST be linked from README/API docs and included in release artifacts.
+
+**Required error/edge-case examples (docs + tests):**
+- Title fetch timeout during `POST /transcribe` (fallback title used; request still succeeds when possible, otherwise explicit timeout error with `retryable: true`).
+- Cancellation via `DELETE /jobs/{id}` for both queued and running jobs (`cancelled` terminal state).
+- Duplicate URL detection on `POST /transcribe` (existing active job returned or conflict response, with clear `hint` about `force=true`).
+- Rate limit exceedance (`429`) with a retry-oriented hint and `retryable: true`.
+
 ### 4. Job cancellation
 
 **Problem:** Once submitted, a job cannot be cancelled. If a wrong URL is submitted, it blocks the queue until the script finishes or fails.
@@ -73,11 +107,33 @@ This document outlines improvements organized by priority.
 - Add a context with timeout (e.g. 15s) to the yt-dlp title fetch.
 - On timeout, proceed with the URL as the title (current fallback behavior) rather than blocking.
 
+### 8. API Client Compatibility
+
+**Problem:** scribe-hub exposes a plain HTTP REST API, but client behavior is only implicitly defined. This makes integrations brittle across `curl`, scripts, and other HTTP clients.
+
+**Requirements:**
+- Define a canonical API usage contract for core workflows (submit, status, cancel, list/history, output retrieval), including required headers, request/response JSON, and error handling expectations.
+- Specify a behavior parity matrix for representative HTTP clients (for example: `curl`, JavaScript `fetch`, and Python `requests`) covering the same core workflows.
+- Define a structured error schema and transport-failure handling guidance (timeouts, connection resets, non-JSON upstream failures, and retry behavior).
+- Define transcript and job schema compatibility rules, including field mapping, type normalization, nullability/default handling, timestamp conventions, and forward-compatible handling for unknown fields.
+- Add explicit non-goals for client-specific conveniences that remain optional (for example shell aliases, SDK helper wrappers, or custom retry middleware).
+- Add acceptance criteria requiring the same input fixtures to produce functionally equivalent API results across the documented HTTP clients, allowing only documented non-goal deviations.
+
+---
+
+### 8b. Documentation deliverables
+
+**Requirements:**
+- Provide quickstart examples using `curl` plus at least one additional HTTP client that demonstrate equivalent end-to-end workflows (submit, monitor, and retrieve results) using the same sample job.
+- Include copy-paste HTTP request snippets for `submit`, `cancel`, `status`, and `history` operations.
+- Add a troubleshooting matrix that maps common authentication, environment-variable, network, and payload-validation issues to likely symptoms and fixes.
+- Define documentation versioning rules and parity checks so API examples are updated whenever routes, payload contracts, or response schemas change.
+
 ---
 
 ## P2 -- Observability
 
-### 8. Structured logging
+### 9. Structured logging
 
 **Problem:** Logs are unstructured `log.Printf` calls mixed with raw script output in a single file.
 
@@ -86,7 +142,7 @@ This document outlines improvements organized by priority.
 - Separate application logs from script output. Script output should go to per-job log files or a dedicated directory.
 - Include job ID, URL, duration, and status in log entries.
 
-### 9. Metrics endpoint
+### 10. Metrics endpoint
 
 **Problem:** No visibility into queue depth, job throughput, or error rates.
 
@@ -98,7 +154,7 @@ This document outlines improvements organized by priority.
   - `title_fetch_duration_seconds` (histogram)
 - Prometheus-compatible format.
 
-### 10. Job history & cleanup
+### 11. Job history & cleanup
 
 **Problem:** The in-memory store grows without bound. After persistence is added, the database will also grow indefinitely.
 
@@ -110,7 +166,7 @@ This document outlines improvements organized by priority.
 
 ## P3 -- Scalability & features
 
-### 11. Configurable worker concurrency
+### 12. Configurable worker concurrency
 
 **Problem:** Only one job runs at a time. On machines with sufficient resources, this underutilizes capacity.
 
@@ -118,7 +174,7 @@ This document outlines improvements organized by priority.
 - Add a `-workers N` flag (default 1) controlling how many jobs run in parallel.
 - Queue position calculations should account for the worker pool size.
 
-### 12. Job priority
+### 13. Job priority
 
 **Problem:** All jobs are FIFO. There's no way to expedite an urgent transcription.
 
@@ -126,7 +182,7 @@ This document outlines improvements organized by priority.
 - Optional `priority` field on submit (`low`, `normal`, `high`; default `normal`).
 - Higher-priority jobs are inserted ahead of lower-priority ones in the queue.
 
-### 13. Rate limiting
+### 14. Rate limiting
 
 **Problem:** No protection against excessive submissions flooding the queue.
 
@@ -134,7 +190,7 @@ This document outlines improvements organized by priority.
 - Configurable rate limit per IP or globally (e.g. 10 submissions per minute).
 - Return `429 Too Many Requests` when exceeded.
 
-### 14. Docker packaging
+### 15. Docker packaging
 
 **Problem:** Deployment requires manually installing Go, yt-dlp, faster-whisper, and the transcription script.
 
@@ -147,15 +203,27 @@ This document outlines improvements organized by priority.
 
 ## P4 -- Nice to have
 
-### 15. WebSocket live output
+### 16. WebSocket live output
 
 **Problem:** For long-running jobs, there's no way to see progress. You only get output after the job finishes.
 
 **Requirements:**
 - `GET /ws/jobs/{id}/output` -- WebSocket endpoint streaming script stdout/stderr in real time.
 - Fallback: `GET /jobs/{id}/output?follow=true` using SSE (Server-Sent Events).
+- Baseline accessibility conformance target: WCAG 2.2 AA for all live output interactions.
+- Live output stream and related controls are fully operable with keyboard only (focus order, open/close stream, scroll, pause/resume).
+- Live output panel uses semantic labeling and a dedicated live region that announces job state transitions (`queued -> running -> completed/failed`) to screen readers.
+- All interactive controls (connect/disconnect, follow mode, pause/resume, expand/collapse output) meet contrast requirements and always show a visible focus indicator.
+- Auto-scrolling live output supports reduced-motion preferences and includes pause/stop controls that halt automatic movement/announcement updates on user request.
 
-### 16. Web UI
+**Acceptance tests:**
+- **Conformance target:** Accessibility checklist and automated scans report WCAG 2.2 AA compliance for the live output workflow, with any exceptions documented and approved.
+- **Keyboard-only operation:** Starting a stream, toggling follow mode, pausing/resuming output, and expanding/collapsing output can be completed without a mouse using only keyboard controls.
+- **Semantic labeling + live announcements:** Screen reader testing confirms labeled controls/regions and audible announcements for each job state transition.
+- **Contrast + focus-visible:** Visual QA verifies minimum contrast and clearly visible focus styles for every interactive element in live output views.
+- **Reduced motion + pause/stop:** With reduced-motion enabled, auto-scrolling/animation is minimized; users can pause/stop auto-scroll and resume manually, and announcement updates from the live region are also halted when scrolling is paused.
+
+### 17. Web UI
 
 **Problem:** The service is API-only, requiring curl or a custom client.
 
@@ -165,11 +233,53 @@ This document outlines improvements organized by priority.
   - Live queue view
   - Job history table with status, title, duration
   - Click-to-expand job output
+- Baseline accessibility conformance target: WCAG 2.2 AA for the full UI experience.
+- Submit form, history table interactions, and output expansion are fully operable with keyboard only.
+- Form fields, status badges, queue/history controls, and output regions have semantic labels/roles; job state changes are exposed through screen-reader announcements.
+- All interactive elements in the UI meet contrast requirements and provide clear `:focus-visible` styling.
+- Motion-heavy behaviors (including auto-scrolling output) honor reduced-motion preferences and provide pause/stop controls.
 
-### 17. Multi-source support
+**Acceptance tests:**
+- **Conformance target:** End-to-end UI accessibility review confirms WCAG 2.2 AA target coverage for submit, queue, history, and output flows.
+- **Keyboard-only operation:** A keyboard-only test pass completes submit, history navigation, row expansion, and output interaction without pointer input.
+- **Semantic labeling + announcements:** Accessibility tree/screen reader checks confirm form labels, status badge semantics, and announcements for job lifecycle changes.
+- **Contrast + focus-visible:** Automated and manual checks confirm compliant color contrast and visible focus state on all interactive elements.
+- **Reduced motion + pause/stop:** When `prefers-reduced-motion` is active, all motion-heavy behaviors (including auto-scrolling output and any animated indicators) are reduced; users can pause/stop/resume auto-scrolling output from UI controls.
+
+### 18. Multi-source support
 
 **Problem:** Title fetching assumes YouTube. The service could handle podcasts, local files, or direct audio URLs.
 
 **Requirements:**
 - Detect URL type and use appropriate title-fetching strategy (yt-dlp for video sites, HTTP HEAD for direct files, filename for local paths).
 - Support `file://` paths or multipart upload for local audio/video files.
+
+---
+
+## Test strategy
+
+### 1. Golden fixtures
+
+**Requirements:**
+- Define a shared set of golden fixtures that include input URL and job options.
+- For each fixture, define the expected normalized output JSON used for parity checks.
+
+### 2. HTTP client parity verification
+
+**Requirements:**
+- Run every golden fixture against the representative HTTP clients defined in section 8 (`curl`, JavaScript `fetch`, and Python `requests`).
+- Normalize each client output to the shared JSON contract and diff results against expected golden outputs.
+- Treat any non-whitespace JSON diff as a parity regression.
+
+### 3. Accessibility validation for UI
+
+**Requirements:**
+- Add accessibility checks for keyboard traversal across all interactive components.
+- Verify ARIA announcements for status updates and asynchronous job state changes.
+- Enforce contrast checks for text and actionable UI elements.
+
+### 4. Release gate
+
+**Requirements:**
+- Block release if any HTTP client parity regression is detected from the golden fixture suite.
+- Block release if any critical accessibility regression is detected.
