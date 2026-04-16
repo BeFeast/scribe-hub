@@ -152,6 +152,38 @@ func TestHandleTranscribeRejectsWhenQueueIsFull(t *testing.T) {
 	}
 }
 
+func TestHandleTranscribeRejectsFullQueueBeforeTitleFetch(t *testing.T) {
+	titleFetchCalls := 0
+	h := newHandler("", "", handlerOptions{
+		startWorker:   false,
+		maxQueuedJobs: 1,
+		fetchTitle: func(context.Context, string) (string, error) {
+			titleFetchCalls++
+			return "", nil
+		},
+	})
+	mux := http.NewServeMux()
+	h.ServeHTTP(mux)
+
+	firstReq := httptest.NewRequest(http.MethodPost, "/transcribe", strings.NewReader(`{"url":"https://example.com/one"}`))
+	firstRec := httptest.NewRecorder()
+	mux.ServeHTTP(firstRec, firstReq)
+	if firstRec.Code != http.StatusAccepted {
+		t.Fatalf("expected first request status %d, got %d", http.StatusAccepted, firstRec.Code)
+	}
+
+	secondReq := httptest.NewRequest(http.MethodPost, "/transcribe", strings.NewReader(`{"url":"https://example.com/two"}`))
+	secondRec := httptest.NewRecorder()
+	mux.ServeHTTP(secondRec, secondReq)
+
+	if secondRec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected second request status %d, got %d", http.StatusServiceUnavailable, secondRec.Code)
+	}
+	if titleFetchCalls != 1 {
+		t.Fatalf("expected full queue to skip title fetch; got %d fetch calls", titleFetchCalls)
+	}
+}
+
 func TestNextJobIDIsUniqueWithinProcess(t *testing.T) {
 	h := newHandler("", "", handlerOptions{startWorker: false})
 	h.nextID.Store(41)

@@ -201,6 +201,11 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.hasQueueCapacity() {
+		writeError(w, http.StatusServiceUnavailable, "QUEUE_FULL", "The transcription queue is full.", "Retry later after queued jobs have started.", true)
+		return
+	}
+
 	title := req.URL
 	titleCtx, cancel := context.WithTimeout(r.Context(), h.titleFetchTimeout)
 	defer cancel()
@@ -282,6 +287,12 @@ func (h *Handler) enqueue(jr *jobRequest) error {
 
 	h.jobsCh <- jr
 	return nil
+}
+
+func (h *Handler) hasQueueCapacity() bool {
+	h.queueMu.Lock()
+	defer h.queueMu.Unlock()
+	return len(h.queue) < h.maxQueuedJobs
 }
 
 func (h *Handler) worker() {
