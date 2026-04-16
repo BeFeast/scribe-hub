@@ -35,6 +35,8 @@ go build -o scribe-hub ./cmd/scribe-hub
 | Output folder | `OBSIDIAN_FOLDER` env var | `$HOME/Documents/Digests` |
 | Gemini API key | `GEMINI_API_KEY` env var | _(required for summarization)_ |
 | Log file | hardcoded | `$HOME/logs/scribe-hub.log` |
+| Title fetch timeout | hardcoded | `15s` |
+| Max queued jobs | hardcoded | `128` |
 
 ## Transcription pipeline
 
@@ -49,6 +51,17 @@ The bundled scripts handle the full transcription workflow:
 ## API
 
 All responses are JSON.
+
+All non-2xx responses use this error shape:
+
+```json
+{
+  "code": "QUEUE_FULL",
+  "message": "The transcription queue is full.",
+  "hint": "Retry later after queued jobs have started.",
+  "retryable": true
+}
+```
 
 ### Submit a transcription
 
@@ -67,13 +80,17 @@ POST /transcribe
 
 Only `url` is required. Returns `202 Accepted` with the job object including queue position.
 
+Title prefetch uses `yt-dlp` with a `15s` timeout. If it times out or fails, the request still succeeds and the job title falls back to the submitted URL.
+
+If the queue already has `128` waiting jobs, the endpoint returns `503 Service Unavailable` with `code: "QUEUE_FULL"`.
+
 ### Check job status
 
 ```
 GET /status/{id}
 ```
 
-Returns the job with current status (`queued`, `running`, `done`, `failed`), queue position, and output when complete.
+Returns the job with current status (`queued`, `running`, `done`, `failed`), queue position, and output when complete. Missing jobs return `404` with `code: "JOB_NOT_FOUND"`.
 
 ### List jobs
 
