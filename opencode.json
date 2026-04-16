@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "mcp": {
+    "scribe-hub": {
+      "command": "go",
+      "args": ["run", "./cmd/mcp-server"],
+      "env": {
+        "SCRIBE_HUB_URL": "http://localhost:18810"
+      }
+    }
+  }
+}
