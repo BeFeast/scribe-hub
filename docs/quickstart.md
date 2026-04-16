@@ -243,3 +243,58 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"queue","arguments":{}}}' \
   | SCRIBE_HUB_URL=http://your-server:18810 go run ./cmd/mcp-server
 ```
+
+---
+
+## Using from OpenClaw
+
+OpenClaw supports two integration paths: a **Skill** (no code, uses the HTTP API directly) or **MCP** (reuses the Go MCP server).
+
+### Option A: Skill (recommended)
+
+Copy the skill into your OpenClaw workspace:
+
+```bash
+mkdir -p ~/.openclaw/workspace/skills/scribe-hub
+cp docs/openclaw-skill/SKILL.md ~/.openclaw/workspace/skills/scribe-hub/SKILL.md
+```
+
+Then set the server URL in OpenClaw's config (`~/.openclaw/openclaw.json`):
+
+```json
+{
+  "skills": {
+    "scribe-hub": {
+      "enabled": true,
+      "config": {
+        "scribe_hub_url": "http://your-server:18810"
+      }
+    }
+  }
+}
+```
+
+The skill teaches the agent to call scribe-hub's HTTP API using the built-in `web_fetch` tool — no extra binaries needed.
+
+### Option B: MCP server
+
+Add to `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "scribe-hub": {
+        "command": "go",
+        "args": ["run", "./cmd/mcp-server"],
+        "cwd": "/path/to/scribe-hub",
+        "env": {
+          "SCRIBE_HUB_URL": "http://your-server:18810"
+        }
+      }
+    }
+  }
+}
+```
+
+This exposes the same four MCP tools (`transcribe`, `job_status`, `list_jobs`, `queue`) as Claude Code and Codex.

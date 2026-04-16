@@ -117,7 +117,7 @@ GET /health
 
 Returns `{"status": "ok"}`.
 
-## CLI integration (MCP)
+## CLI integration (MCP + OpenClaw)
 
 scribe-hub includes an MCP (Model Context Protocol) server so you can submit transcriptions and check status directly from AI coding tools.
 
@@ -128,6 +128,8 @@ scribe-hub includes an MCP (Model Context Protocol) server so you can submit tra
 **Codex CLI** — config is in `.codex/config.toml`. The server registers automatically.
 
 **OpenCode** — config is in `opencode.json`. The server registers automatically.
+
+**OpenClaw** — copy the skill to `~/.openclaw/workspace/skills/scribe-hub/SKILL.md` (see `docs/openclaw-skill/`) or add the MCP server to `~/.openclaw/openclaw.json`. See [`docs/quickstart.md`](docs/quickstart.md#using-from-openclaw) for details.
 
 ### MCP tools
 
