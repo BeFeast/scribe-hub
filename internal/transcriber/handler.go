@@ -327,10 +327,14 @@ func (h *Handler) run(jr *jobRequest) {
     }
 
     cmd := exec.Command(args[0], args[1:]...)
-    cmd.Env = append(os.Environ(),
-        "PATH=/usr/local/bin:/Users/god/.local/bin:/Users/god/.bun/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    env := os.Environ()
+    if extra := os.Getenv("SCRIBE_EXTRA_PATH"); extra != "" {
+        env = append(env, "PATH="+extra+":"+os.Getenv("PATH"))
+    }
+    env = append(env,
         "OBSIDIAN_FOLDER="+getEnv("OBSIDIAN_FOLDER", filepath.Join(os.Getenv("HOME"), "Documents/Digests")),
     )
+    cmd.Env = env
 
     var buf bytes.Buffer
     logFile, err := os.OpenFile(h.logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -420,9 +424,6 @@ func getEnv(key, def string) string {
 
 func fetchYouTubeTitle(url string) (string, error) {
     cmd := exec.Command("yt-dlp", "--cookies-from-browser", "chrome", "--get-title", "--no-playlist", url)
-    cmd.Env = append(os.Environ(),
-        "PATH=/usr/local/bin:/Users/god/.local/bin:/Users/god/.bun/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-    )
     out, err := cmd.Output()
     if err != nil {
         return "", err

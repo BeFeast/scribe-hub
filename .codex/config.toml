@@ -1,0 +1,7 @@
+[mcp_servers.scribe-hub]
+command = "go"
+args = ["run", "./cmd/mcp-server"]
+enabled = true
+
+[mcp_servers.scribe-hub.env]
+SCRIBE_HUB_URL = "http://localhost:18810"

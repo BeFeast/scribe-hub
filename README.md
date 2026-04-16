@@ -1,15 +1,18 @@
 # scribe-hub
 
-HTTP service that queues and runs video transcription jobs using [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Submit a YouTube (or any yt-dlp-supported) URL, and scribe-hub will transcribe it in the background, optionally generating an AI summary and saving the result to your Obsidian vault.
+HTTP service that queues and runs video transcription jobs using [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Submit a YouTube (or any yt-dlp-supported) URL, and scribe-hub will transcribe it in the background, optionally generating an AI summary via Gemini and saving the result to your Obsidian vault.
 
 Jobs are processed one at a time through a serial queue, so long-running transcriptions don't compete for GPU/CPU resources.
 
 ## Prerequisites
 
 - **Go 1.25+**
-- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** -- used to fetch video titles and by the transcription script to download audio
-- **Google Chrome** -- yt-dlp reads cookies from Chrome to authenticate title fetches; title falls back to the URL if Chrome is unavailable
-- **Transcription script** -- [`video-transcript-summary-faster-whisper.sh`](https://github.com/user/video-summary) (default location: `$HOME/Projects/video-summary/scripts/video-transcript-summary-faster-whisper.sh`)
+- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** -- downloads audio from YouTube and other video sites
+- **[ffmpeg](https://ffmpeg.org/)** -- normalizes audio to 16kHz WAV before transcription
+- **[uv](https://docs.astral.sh/uv/)** -- runs the Python transcription and summarization scripts
+- **Python 3.10+** -- required by the Python scripts (managed by uv)
+- **Google Chrome** (optional) -- yt-dlp reads cookies from Chrome to authenticate title fetches; title falls back to the URL if Chrome is unavailable
+- **`GEMINI_API_KEY`** env var -- required for AI summarization (not needed with `--skip-summary`)
 ## Quick start
 
 ```bash
@@ -27,10 +30,21 @@ go build -o scribe-hub ./cmd/scribe-hub
 | Setting | Source | Default |
 | --- | --- | --- |
 | HTTP port | `-port` flag | `18810` |
-| Transcription script | hardcoded | `$HOME/Projects/video-summary/scripts/video-transcript-summary-faster-whisper.sh` |
+| Transcription script | `SCRIBE_SCRIPT_PATH` env var | auto-resolved from binary dir or `./scripts/video-transcript-summary-faster-whisper.sh` |
+| Extra PATH dirs | `SCRIBE_EXTRA_PATH` env var | _(none — inherits system PATH)_ |
 | Output folder | `OBSIDIAN_FOLDER` env var | `$HOME/Documents/Digests` |
+| Gemini API key | `GEMINI_API_KEY` env var | _(required for summarization)_ |
 | Log file | hardcoded | `$HOME/logs/scribe-hub.log` |
-| `PATH` (script env) | hardcoded | macOS-specific paths; **macOS only until P0#3 is resolved** |
+
+## Transcription pipeline
+
+The bundled scripts handle the full transcription workflow:
+
+1. **Download** — `yt-dlp` extracts audio from the video URL
+2. **Normalize** — `ffmpeg` converts to 16kHz mono WAV
+3. **Transcribe** — `faster-whisper` (via `tools/faster-whisper-transcribe.py`) produces a transcript markdown file
+4. **Summarize** — Gemini API (via `tools/gemini-summarize.py`) generates a Russian-language analytical summary (skippable with `--skip-summary`)
+5. **Link** — frontmatter is post-processed to cross-link transcript and summary files
 
 ## API
 
@@ -86,6 +100,29 @@ GET /health
 
 Returns `{"status": "ok"}`.
 
+## CLI integration (MCP)
+
+scribe-hub includes an MCP (Model Context Protocol) server so you can submit transcriptions and check status directly from AI coding tools.
+
+### Setup
+
+**Claude Code** — config is already in `.mcp.json`. Run `/mcp` to verify the server is connected.
+
+**Codex CLI** — config is in `.codex/config.toml`. The server registers automatically.
+
+**OpenCode** — config is in `opencode.json`. The server registers automatically.
+
+### MCP tools
+
+| Tool | Description |
+|------|-------------|
+| `transcribe` | Submit a URL for transcription |
+| `job_status` | Check status of a job by ID |
+| `list_jobs` | List jobs with optional status filter |
+| `queue` | Show running + queued jobs |
+
+The MCP server connects to the running scribe-hub HTTP API. Set `SCRIBE_HUB_URL` env var if scribe-hub runs on a non-default address (default: `http://localhost:18810`).
+
 ## Example workflow
 
 ```bash
@@ -105,7 +142,10 @@ curl http://localhost:18810/queue
 
 ```
 cmd/scribe-hub/main.go          -- entrypoint, flag parsing, HTTP server
+cmd/mcp-server/main.go           -- MCP stdio server (proxies to HTTP API)
 internal/transcriber/handler.go  -- HTTP handlers, in-memory job store, serial worker queue
+scripts/                         -- bash orchestrator for the transcription pipeline
+tools/                           -- Python scripts (transcription + summarization) and prompt templates
 ```
 
 All state is in-memory. Restarting the service clears all job history. The single background worker goroutine picks jobs off a buffered channel and executes the transcription script via `os/exec`.
