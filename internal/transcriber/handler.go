@@ -57,12 +57,6 @@ func (s *Store) Add(job *Job) {
 	s.jobs[job.ID] = job
 }
 
-func (s *Store) Delete(id string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.jobs, id)
-}
-
 func (s *Store) Get(id string) (*Job, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -233,7 +227,6 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		QueuedAt:  now,
 		Title:     title,
 	}
-	h.store.Add(job)
 
 	jr := &jobRequest{
 		job:         job,
@@ -242,7 +235,6 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		modelSize:   req.ModelSize,
 	}
 	if err := h.enqueue(jr); err != nil {
-		h.store.Delete(job.ID)
 		writeError(w, http.StatusServiceUnavailable, "QUEUE_FULL", "The transcription queue is full.", "Retry later after queued jobs have started.", true)
 		return
 	}
@@ -283,6 +275,7 @@ func (h *Handler) enqueue(jr *jobRequest) error {
 		return errQueueFull
 	}
 	h.queue = append(h.queue, jr)
+	h.store.Add(jr.job)
 	h.queueMu.Unlock()
 
 	h.jobsCh <- jr
