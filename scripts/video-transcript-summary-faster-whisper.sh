@@ -5,7 +5,7 @@ export PATH="/usr/local/bin:$HOME/.bun/bin:$HOME/.local/bin:$PATH"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-TRANSCRIBE_SCRIPT="$REPO_ROOT/tools/faster-whisper-transcribe.py"
+TRANSCRIBE_SCRIPT="$REPO_ROOT/tools/mlx-whisper-transcribe.py"
 SUMMARIZE_SCRIPT="$REPO_ROOT/tools/gemini-summarize.py"
 PROMPT_TEMPLATE_FILE="$REPO_ROOT/tools/prompts/transcript-summary-gemini.md"
 
@@ -253,7 +253,6 @@ TRANSCRIBE_ARGS=(
     --audio-file "$NORMALIZED_AUDIO_FILE"
     --output-dir "$TRANSCRIPTS_DIR"
     --model-size "$MODEL_SIZE"
-    --compute-type "$COMPUTE_TYPE"
     --language "$LANGUAGE"
     --beam-size "$BEAM_SIZE"
 )
@@ -274,7 +273,7 @@ if [[ "$OVERWRITE" -eq 1 ]]; then
     TRANSCRIBE_ARGS+=(--overwrite)
 fi
 
-echo "Transcribing audio with faster-whisper (${MODEL_SIZE}, ${COMPUTE_TYPE})..." >&2
+echo "Transcribing audio with mlx-whisper (${MODEL_SIZE})..." >&2
 uv run "${TRANSCRIBE_ARGS[@]}" >"$TRANSCRIBE_OUTPUT_FILE"
 
 TRANSCRIPT_FILE="$(awk -F: '/^TRANSCRIPT_FILE:/{sub(/^TRANSCRIPT_FILE:/,""); print; exit}' "$TRANSCRIBE_OUTPUT_FILE")"
