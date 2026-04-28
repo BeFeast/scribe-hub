@@ -128,7 +128,6 @@ def main() -> int:
         str(audio_file),
         path_or_hf_repo=path,
         language=language,
-        beam_size=args.beam_size,
     )
 
     segments = result.get("segments", [])
