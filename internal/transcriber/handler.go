@@ -104,6 +104,7 @@ type Handler struct {
 type jobRequest struct {
 	job         *Job
 	skipSummary bool
+	overwrite   bool
 	language    string
 	modelSize   string
 }
@@ -178,6 +179,7 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		URL         string `json:"url"`
 		SkipSummary bool   `json:"skip_summary"`
+		Overwrite   bool   `json:"overwrite"`
 		Language    string `json:"language"`
 		ModelSize   string `json:"model_size"`
 	}
@@ -231,6 +233,7 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 	jr := &jobRequest{
 		job:         job,
 		skipSummary: req.SkipSummary,
+		overwrite:   req.Overwrite,
 		language:    req.Language,
 		modelSize:   req.ModelSize,
 	}
@@ -399,6 +402,9 @@ func (h *Handler) run(jr *jobRequest) {
 	args := []string{h.scriptPath, job.URL}
 	if jr.skipSummary {
 		args = append(args, "--skip-summary")
+	}
+	if jr.overwrite {
+		args = append(args, "--overwrite")
 	}
 	if jr.language != "" {
 		args = append(args, "--language", jr.language)
